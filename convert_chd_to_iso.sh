@@ -4,7 +4,8 @@
 BASE_DIR="${1:-.}"
 
 mkdir -p "$BASE_DIR/processed"
-mkdir -p "$BASE_DIR/iso"
+mkdir -p "$BASE_DIR/iso/DVD"
+mkdir -p "$BASE_DIR/iso/CD"
 
 # Find all .chd files in the directory (recursively)
 find "$BASE_DIR" -type f -name "*.chd" | while read -r CHD_FILE; do
@@ -24,8 +25,15 @@ find "$BASE_DIR" -type f -name "*.chd" | while read -r CHD_FILE; do
         if [[ -f "$BASE_NAME.bin" ]]; then
             echo "Renaming .bin to .iso for: $CHD_FILE"
             mv "$BASE_NAME.bin" "$ISO_FILE"
+            ISO_SIZE_BYTES=$(stat -c%s "$ISO_FILE")
+            ISO_SIZE_MB=$(echo "scale=2; $ISO_SIZE_BYTES / 1048576" | bc)
+            ISO_SIZE_MB_INT=$(( (ISO_SIZE_BYTES + 1048575) / 1048576 ))
             mv "${CHD_FILE}" "${BASE_DIR}processed/${BASE_FILENAME}.chd"
-            mv "${ISO_FILE}" "${BASE_DIR}iso/${BASE_FILENAME}.iso"
+            if (( ISO_SIZE_MB_INT <= 700 )); then
+                mv "${ISO_FILE}" "${BASE_DIR}iso/CD/${BASE_FILENAME}.iso"
+            else
+                mv "${ISO_FILE}" "${BASE_DIR}iso/DVD/${BASE_FILENAME}.iso"
+            fi
             rm "$CUE_FILE"
         fi
             echo "Conversion complete: $ISO_FILE"
